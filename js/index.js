@@ -1,5 +1,5 @@
 import {iniXSSProtection} from './xss-protection.js';
-import {handleBoldAction, handleHeaderAction, handleItalicAction, HEADERS, initEditor} from './wysiwig.js';
+import {COMMANDS, handleHeaderCommand, handlePlainCommand, HEADERS, initEditor} from './wysiwig.js';
 
 const EDITOR = '#editor';
 const H1_BUTTON = '#h1';
@@ -22,15 +22,15 @@ function init() {
     iniXSSProtection(editor);
 
     h1Button.addEventListener('click', () => {
-        handleHeaderAction(HEADERS.H1);
+        handleHeaderCommand(HEADERS.H1);
     });
     h2Button.addEventListener('click', () => {
-        handleHeaderAction(HEADERS.H2);
+        handleHeaderCommand(HEADERS.H2);
     });
     italicButton.addEventListener('click', () => {
-        handleItalicAction();
+        handlePlainCommand(COMMANDS.ITALIC);
     });
     boldButton.addEventListener('click', () => {
-        handleBoldAction();
+        handlePlainCommand(COMMANDS.BOLD);
     });
 }
