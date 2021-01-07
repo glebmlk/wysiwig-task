@@ -1,3 +1,4 @@
+import {iniXSSProtection} from './xss-protection.js';
 import {handleBoldAction, handleHeaderAction, handleItalicAction, HEADERS, initEditor} from './wysiwig.js';
 
 const EDITOR = '#editor';
@@ -18,6 +19,11 @@ function init() {
     const boldButton = document.querySelector(BOLD_BUTTON);
 
     initEditor(editor);
+    iniXSSProtection(editor);
+
+    editor.addEventListener('input', () => {
+        console.log(editor.innerHTML);
+    });
 
     h1Button.addEventListener('click', () => {
         handleHeaderAction(HEADERS.H1);
