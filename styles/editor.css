@@ -36,15 +36,21 @@
 }
 
 .editor .edit-area font[size='7'] {
+  /* setting size in px for proper "paste with styles"
   font-size: 1.5rem;
-  line-height: 2.5rem;
+  line-height: 2.5rem; */
+  font-size: 24px;
+  line-height: 40px;
   font-weight: 500;
   display: block;
 }
 
 .editor .edit-area font[size='6'] {
+  /* setting size in px for proper "paste with styles"
   font-size: 1.2rem;
-  line-height: 2.5rem;
+  line-height: 2.5rem; */
+  font-size: 19px;
+  line-height: 40px;
   font-weight: 500;
   display: block;
   margin: 0;
