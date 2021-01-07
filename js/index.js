@@ -21,10 +21,6 @@ function init() {
     initEditor(editor);
     iniXSSProtection(editor);
 
-    editor.addEventListener('input', () => {
-        console.log(editor.innerHTML);
-    });
-
     h1Button.addEventListener('click', () => {
         handleHeaderAction(HEADERS.H1);
     });

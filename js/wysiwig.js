@@ -1,20 +1,18 @@
-
 export const HEADERS = {
     'H1': 7,
     'H2': 6
 };
-
-const BOLD_FONT_WEIGHT_VAR = '--bold-font-weight';
-const DEFAULT_FONT_WEIGHT_VAR = '--default-font-weight';
-
-let DEFAULT_FONT_WEIGHT = null;
-let BOLD_FONT_WEIGHT = null;
-let EDITOR = null;
+export const COMMANDS = {
+    BOLD: 'bold',
+    ITALIC: 'italic',
+    HEADER: 'fontSize'
+}
 
 const canExecCommand = () => {
     const selection = document.getSelection();
+    const range = selection.getRangeAt(0);
 
-    if (selection.isCollapsed) {
+    if (selection.isCollapsed || range.startOffset === range.endOffset) {
         return false;
     }
 
@@ -22,11 +20,7 @@ const canExecCommand = () => {
 }
 
 export const initEditor = editor => {
-    const styles = getComputedStyle(editor);
-
-    DEFAULT_FONT_WEIGHT = parseInt(styles.getPropertyValue(DEFAULT_FONT_WEIGHT_VAR), 10);
-    BOLD_FONT_WEIGHT = parseInt(styles.getPropertyValue(BOLD_FONT_WEIGHT_VAR), 10);
-    EDITOR = editor;
+    document.execCommand('defaultParagraphSeparator', false, 'p');
 }
 
 export const handleBoldAction = () => {

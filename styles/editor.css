@@ -17,6 +17,10 @@
   overflow-y: scroll;
 }
 
+.editor .edit-area p {
+    margin: 4px 0;
+}
+
 .editor .edit-area:empty::before {
   content: attr(placeholder);
   font-size: 1.5rem;
@@ -28,7 +32,7 @@
 }
 
 .editor .edit-area b {
-  font-weight: var(--bold-font-weight);
+  font-weight: 700;
 }
 
 .editor .edit-area .italic-text {

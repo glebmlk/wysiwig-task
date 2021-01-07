@@ -1,8 +1,3 @@
-:root {
-    --default-font-weight: 400;
-    --bold-font-weight: 700;
-}
-
 body {
   font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial,
     sans-serif;
@@ -12,7 +7,6 @@ body {
   padding: 0;
   margin: 0;
   background: #edc8f4;
-  font-weight: var(--default-font-weight);
 }
 
 .container {
