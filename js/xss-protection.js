@@ -1,6 +1,8 @@
 const PERMITTED_ELEMENTS = ['b', 'i', 'font', 'div', 'br', 'p'];
 const PERMITTED_ATTRIBUTES = ['style', 'size'];
 
+// protecting against direct manipulation with editor.innerHTML
+// e.g. editor.innerHTML = '<script>alert(1)</script>'
 export const iniXSSProtection = editor => {
     // listening to changes of innerHTML prop
     const obs = new MutationObserver(() => {
