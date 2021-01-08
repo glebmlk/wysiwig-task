@@ -39,21 +39,23 @@
   font-style: italic;
 }
 
-.editor .edit-area font[size='7'] {
-  /* setting size in px for proper "paste with styles"
-  font-size: 1.5rem;
-  line-height: 2.5rem; */
-  font-size: 24px;
+/* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
+.editor .edit-area font[size="7"], .editor .edit-area span[style*="font-size: xxx-large;"] {
+  /* font-size: 1.5rem;
+  line-height: 2.5rem;  */
+  /* setting size in px for proper "paste with styles" */
+  font-size: 24px !important;
   line-height: 40px;
   font-weight: 500;
   display: block;
 }
 
-.editor .edit-area font[size='6'] {
-  /* setting size in px for proper "paste with styles"
-  font-size: 1.2rem;
-  line-height: 2.5rem; */
-  font-size: 19px;
+/* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
+.editor .edit-area font[size="6"], .editor .edit-area span[style*="font-size: xx-large;"] {
+  /* font-size: 1.2rem;
+  line-height: 2.5rem;  */
+  /* setting size in px for proper "paste with styles" */
+  font-size: 19px !important;
   line-height: 40px;
   font-weight: 500;
   display: block;
