@@ -40,7 +40,7 @@
 }
 
 /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
-.editor .edit-area font[size="7"], .editor .edit-area span[style*="font-size: xxx-large;"] {
+.editor .edit-area font[size="7"], .editor .edit-area span[style*="font-size: xxx-large;"], .editor .edit-area span[style*="font-size: -webkit-xxx-large;"] {
   /* font-size: 1.5rem;
   line-height: 2.5rem;  */
   /* setting size in px for proper "paste with styles" */
@@ -51,7 +51,7 @@
 }
 
 /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
-.editor .edit-area font[size="6"], .editor .edit-area span[style*="font-size: xx-large;"] {
+.editor .edit-area font[size="6"], .editor .edit-area span[style*="font-size: xx-large;"], .editor .edit-area span[style*="font-size: -webkit-xx-large;"] {
   /* font-size: 1.2rem;
   line-height: 2.5rem;  */
   /* setting size in px for proper "paste with styles" */
