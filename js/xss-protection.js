@@ -1,4 +1,4 @@
-const PERMITTED_ELEMENTS = ['b', 'i', 'font', 'div', 'br', 'p'];
+const PERMITTED_ELEMENTS = ['b', 'i', 'font', 'div', 'br', 'p', 'span'];
 const PERMITTED_ATTRIBUTES = ['style', 'size'];
 
 // protecting against direct manipulation with editor.innerHTML
