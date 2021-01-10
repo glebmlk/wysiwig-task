@@ -1,0 +1,70 @@
+html {
+    height: 100%; overflow: hidden;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+    font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.edit-area {
+    height: 100%;
+    outline: 0;
+    overflow-y: scroll;
+  }
+
+.edit-area p {
+    margin: 4px 0;
+}
+
+.edit-area:empty::before {
+    content: attr(placeholder);
+    font-size: 1.5rem;
+    color: #cbcfda;
+}
+
+.edit-area:empty:focus::before {
+    content: "";
+}
+
+.edit-area b,
+.edit-area b font[size="7"],
+.edit-area b span[style*="font-size: xxx-large;"],
+.edit-area b span[style*="font-size: -webkit-xxx-large;"],
+.edit-area b font[size="6"],
+.edit-area b span[style*="font-size: xx-large;"],
+.edit-area b span[style*="font-size: -webkit-xx-large;"] {
+    font-weight: 700;
+}
+
+.edit-area .italic-text {
+    font-style: italic;
+}
+
+  /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
+.edit-area font[size="7"],
+.edit-area [style*="font-size: xxx-large;"],
+.edit-area [style*="font-size: -webkit-xxx-large;"] {
+    /* font-size: 1.5rem;
+    line-height: 2.5rem;  */
+    /* setting size in px for proper "paste with styles" */
+    font-size: 24px !important;
+    line-height: 40px;
+    font-weight: 500;
+    display: block;
+}
+
+  /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
+.edit-area font[size="6"],
+.edit-area [style*="font-size: xx-large;"],
+.edit-area [style*="font-size: -webkit-xx-large;"] {
+    /* font-size: 1.2rem;
+    line-height: 2.5rem;  */
+    /* setting size in px for proper "paste with styles" */
+    font-size: 19px !important;
+    line-height: 40px;
+    font-weight: 500;
+    display: block;
+    margin: 0;
+}

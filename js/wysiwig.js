@@ -8,9 +8,10 @@ export const COMMANDS = {
 }
 
 let EDITOR = null;
+let DOCUMENT_REF = null;
 
 const canExecCommand = () => {
-    const selection = document.getSelection();
+    const selection = DOCUMENT_REF.getSelection();
 
     if (selection.isCollapsed) {
         return false;
@@ -40,10 +41,13 @@ const collectAllTextNodes = startNode => {
     return textNodes;
 }
 
-export const initEditor = editor => {
-    EDITOR = editor;
+export const initEditor = (editor, documentRef) => {
+    documentRef.designMode = 'on';
 
-    document.execCommand('defaultParagraphSeparator', false, 'p');
+    EDITOR = editor;
+    DOCUMENT_REF = documentRef;
+
+    DOCUMENT_REF.execCommand('defaultParagraphSeparator', false, 'p');
 }
 
 export const handlePlainCommand = command => {
@@ -51,7 +55,7 @@ export const handlePlainCommand = command => {
         return;
     }
 
-    document.execCommand(command);
+    DOCUMENT_REF.execCommand(command);
 };
 
 export const handleItalicAction = () => {
@@ -59,7 +63,7 @@ export const handleItalicAction = () => {
         return;
     }
 
-    document.execCommand('italic');
+    DOCUMENT_REF.execCommand('italic');
 };
 
 export const handleHeaderCommand = size => {
@@ -68,7 +72,7 @@ export const handleHeaderCommand = size => {
     }
 
     // see case #3 in https://github.com/glebmlk/wysiwig-task/issues/1
-    const selection = document.getSelection();
+    const selection = DOCUMENT_REF.getSelection();
     const allTextNodes = collectAllTextNodes(EDITOR);
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
     // searching nodes with font size = size to apply
@@ -91,7 +95,7 @@ export const handleHeaderCommand = size => {
 
     if (!!nodesToApply.length) {
         if (selection.anchorNode === selection.focusNode) {
-            document.execCommand('fontSize', false, size);
+            DOCUMENT_REF.execCommand('fontSize', false, size);
 
             return;
         }
@@ -111,6 +115,6 @@ export const handleHeaderCommand = size => {
         selection.removeAllRanges();
         selection.addRange(range);
 
-        document.execCommand('fontSize', false, size);
+        DOCUMENT_REF.execCommand('fontSize', false, size);
     }
 };
