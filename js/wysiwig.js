@@ -1,8 +1,15 @@
+import {isFirefox} from './utils.js';
+
 export const HEADERS = {
     'H1': 7,
     'H2': 6
 };
 
+const BOLD_FONT_WEIGHT_VAR = '--bold-font-weight';
+const DEFAULT_FONT_WEIGHT_VAR = '--default-font-weight';
+
+let BOLD_FONT_WEIGHT = 0;
+let DEFAULT_FONT_WEIGHT = 0;
 let EDITOR = null;
 
 const canExecCommand = () => {
@@ -83,7 +90,11 @@ const getSelectedNodeText = (node, selection, selectionOrder) => {
 }
 
 export const initEditor = editor => {
+    const styles = getComputedStyle(editor);
+
     EDITOR = editor;
+    DEFAULT_FONT_WEIGHT = parseInt(styles.getPropertyValue(DEFAULT_FONT_WEIGHT_VAR), 10);
+    BOLD_FONT_WEIGHT = parseInt(styles.getPropertyValue(BOLD_FONT_WEIGHT_VAR), 10);
 
     document.execCommand('defaultParagraphSeparator', false, 'div');
 }
@@ -160,6 +171,41 @@ export const handleItalicCommand = () => {
 export const handleBoldCommand = () => {
     if (!canExecCommand()) {
         return;
+    }
+
+    if (isFirefox() && !!window.patchFirefox) {
+        const selection = document.getSelection();
+        const allTextNodes = collectAllTextNodes(EDITOR);
+        const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
+        const isBold = selectedTextNodes.every(node => +getComputedStyle(node.parentElement)['font-weight'] >= BOLD_FONT_WEIGHT);
+
+        if (isBold) {
+            selectedTextNodes.forEach(node => {
+                const parents = getTextNodeParents(node);
+                const boldElement = parents.find(p => p.style.fontWeight >= BOLD_FONT_WEIGHT);
+
+                if (boldElement) {
+                    boldElement.style.fontWeight = DEFAULT_FONT_WEIGHT;
+                }
+            });
+        }
+
+        const obs = new MutationObserver(() => {
+            editor.querySelectorAll('span[style*="font-weight: normal;"]').forEach(el => {
+                const fontWeight = getComputedStyle(el.parentElement)['font-weight'];
+
+                if (+fontWeight > DEFAULT_FONT_WEIGHT) {
+                    el.style.fontWeight = BOLD_FONT_WEIGHT
+                }
+            });
+
+            obs.disconnect();
+        });
+
+        obs.observe(editor, {
+            childList: true,
+            subtree: true
+        });
     }
 
     document.execCommand('bold');
