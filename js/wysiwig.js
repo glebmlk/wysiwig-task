@@ -2,10 +2,6 @@ export const HEADERS = {
     'H1': 7,
     'H2': 6
 };
-export const COMMANDS = {
-    BOLD: 'bold',
-    ITALIC: 'italic'
-}
 
 let EDITOR = null;
 
@@ -19,6 +15,7 @@ const canExecCommand = () => {
     return true;
 }
 
+// getting all text nodes inside editor
 const collectAllTextNodes = startNode => {
     if (!startNode) {
         return;
@@ -40,26 +37,132 @@ const collectAllTextNodes = startNode => {
     return textNodes;
 }
 
+// getting all parents of text node inside EDITOR
+const getTextNodeParents = node => {
+    const parents = []
+    let parent = node.parentElement;
+
+    while (parent !== EDITOR) {
+        parents.push(parent)
+
+        parent = parent.parentElement;
+    }
+
+    return parents;
+}
+
+// getting selected part of text in node
+const getSelectedNodeText = (node, selection, selectionOrder) => {
+    // node in the middle of selection
+    if (node !== selection.anchorNode && node !== selection.focusNode) {
+        return node.textContent;
+    }
+
+    // only node in selection
+    if (selection.anchorNode === selection.focusNode) {
+        if (selectionOrder === 1) {
+            return node.textContent.substring(selection.anchorOffset, selection.focusOffset);
+        } else {
+            return node.textContent.substring(selection.focusOffset, selection.anchorOffset);
+        }
+    }
+
+    if (node === selection.anchorNode) {
+        if (selectionOrder === 1) {
+            return selection.anchorNode.textContent.substr(selection.anchorOffset, selection.anchorNode.textContent.length);
+        } else {
+            return selection.anchorNode.textContent.substr(0, selection.anchorOffset);
+        }
+    } else {
+        if (selectionOrder === 1) {
+            return selection.focusNode.textContent.substr(0, selection.focusOffset);
+        } else {
+            return selection.focusNode.textContent.substr(selection.focusOffset, selection.focusNode.textContent.length);
+        }
+    }
+}
+
 export const initEditor = editor => {
     EDITOR = editor;
 
-    document.execCommand('defaultParagraphSeparator', false, 'p');
+    document.execCommand('defaultParagraphSeparator', false, 'div');
 }
 
-export const handlePlainCommand = command => {
+export const handeCopyCommand = event => {
     if (!canExecCommand()) {
         return;
     }
 
-    document.execCommand(command);
-};
+    event.preventDefault();
 
-export const handleItalicAction = () => {
+    const selection = window.getSelection();
+    const allTextNodes = collectAllTextNodes(EDITOR);
+    const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
+    // selection is left->right up->down OR right->left down->up
+    const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
+    // getting text styles for every text node in selection
+    const selectedNodesWithStyles = selectedTextNodes.map(node => {
+        const parents = getTextNodeParents(node);
+
+        // closest to text node
+        let textStyleNode = parents[0];
+        // furthest from text node
+        let displayStyleNode = parents[parents.length - 1];
+
+        if (!parents.length) {
+            textStyleNode = EDITOR;
+        }
+
+        const textStyles = getComputedStyle(textStyleNode);
+        const displayStyles = displayStyleNode ? getComputedStyle(displayStyleNode) : undefined;
+        const styles = `` +
+            `font-size: ${textStyles.getPropertyValue('font-size')}; ` +
+            `font-family: ${textStyles.getPropertyValue('font-family').replace(/\"/g, `'`)}; ` +
+            `font-weight: ${textStyles.getPropertyValue('font-weight')}; ` +
+            `font-style: ${textStyles.getPropertyValue('font-style')}; ` +
+            `font-variant: ${textStyles.getPropertyValue('font-variant')}; ` +
+            `line-height: ${textStyles.getPropertyValue('line-height')}; ` +
+            `text-decoration: ${textStyles.getPropertyValue('text-decoration')}; ` +
+            `vertical-align: ${textStyles.getPropertyValue('vertical-align')}; ` +
+            `white-space: ${textStyles.getPropertyValue('white-space')}; ` +
+            `color: ${textStyles.getPropertyValue('color')}; ` +
+            `background-color: ${textStyles.getPropertyValue('background-color')}; ` +
+            `margin: ${textStyles.getPropertyValue('margin')}; ` +
+            `display: ${displayStyles ? displayStyles.getPropertyValue('display') : 'inline'};`;
+
+        return {
+            node,
+            styles,
+        };
+    });
+    // wrapping every text node in span with corresponding styles
+    const content = selectedNodesWithStyles.reduce((accum, {node, styles}) => {
+        const span = document.createElement('span')
+
+        span.textContent = getSelectedNodeText(node, selection, selectionOrder);
+        span.setAttribute('style', styles);
+
+        return accum += span.outerHTML;
+    }, '');
+
+    event.clipboardData.clearData();
+    event.clipboardData.setData('text/html', content);
+}
+
+export const handleItalicCommand = () => {
     if (!canExecCommand()) {
         return;
     }
 
     document.execCommand('italic');
+};
+
+export const handleBoldCommand = () => {
+    if (!canExecCommand()) {
+        return;
+    }
+
+    document.execCommand('bold');
 };
 
 export const handleHeaderCommand = size => {

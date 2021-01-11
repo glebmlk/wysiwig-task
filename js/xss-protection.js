@@ -6,7 +6,7 @@ const PERMITTED_ATTRIBUTES = ['style', 'size'];
 export const iniXSSProtection = editor => {
     // listening to changes of innerHTML prop
     const obs = new MutationObserver(() => {
-        obs.disconnect()
+        obs.disconnect();
 
         Array.from(editor.children).forEach(child => {
             // removing unsupported and potentially unsafe elements such as img, script...
