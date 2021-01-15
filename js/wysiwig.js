@@ -58,6 +58,51 @@ const getTextNodeParents = node => {
     return parents;
 }
 
+// getting map of paragraphs and their text nodes
+const getTextNodesTopParentsMap = selectedTextNodes => {
+    const parentsMap = new Map();
+
+    selectedTextNodes.forEach(node => {
+        const parents = getTextNodeParents(node);
+
+        const parent = !!parents.length ? parents[parents.length - 1] : EDITOR;
+
+        if (parentsMap.has(parent)) {
+            parentsMap.set(parent, [...parentsMap.get(parent), node]);
+        } else {
+            parentsMap.set(parent, [node]);
+        }
+    });
+
+    return parentsMap;
+};
+
+// getting text styles for every text node in selection
+const getSelectedNodesWithStyles = selectedTextNodes => {
+    return selectedTextNodes.map(node => {
+        const parents = getTextNodeParents(node);
+        const textStyleNode = !!parents.length ? parents[0] : EDITOR;
+        const textStyles = getComputedStyle(textStyleNode);
+        const styles = `` +
+            `font-size: ${textStyles.getPropertyValue('font-size')}; ` +
+            `font-family: ${textStyles.getPropertyValue('font-family').replace(/\"/g, `'`)}; ` +
+            `font-weight: ${textStyles.getPropertyValue('font-weight')}; ` +
+            `font-style: ${textStyles.getPropertyValue('font-style')}; ` +
+            `font-variant: ${textStyles.getPropertyValue('font-variant')}; ` +
+            `line-height: ${textStyles.getPropertyValue('line-height')}; ` +
+            `text-decoration: ${textStyles.getPropertyValue('text-decoration')}; ` +
+            `vertical-align: ${textStyles.getPropertyValue('vertical-align')}; ` +
+            `white-space: ${textStyles.getPropertyValue('white-space')}; ` +
+            `color: ${textStyles.getPropertyValue('color')}; ` +
+            `background-color: ${textStyles.getPropertyValue('background-color')};`;
+
+        return {
+            node,
+            styles,
+        };
+    });
+}
+
 // getting selected part of text in node
 const getSelectedNodeText = (node, selection, selectionOrder) => {
     // node in the middle of selection
@@ -89,6 +134,36 @@ const getSelectedNodeText = (node, selection, selectionOrder) => {
     }
 }
 
+const getStyledNodesContent = (selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder) => {
+    // wrapping every text node in span with corresponding styles
+    const wrapWithSpan = node => {
+        const span = document.createElement('span')
+        const styles = selectedNodesWithStyles.find(({node: selectedNode}) => selectedNode === node);
+
+        span.textContent = getSelectedNodeText(node, selection, selectionOrder);
+        span.setAttribute('style', styles.styles);
+
+        return span;
+    }
+    let content = '';
+
+    selectedTextNodesParents.forEach((nodes, parent) => {
+        if (parent === EDITOR) {
+            content += nodes.reduce((accum, node) => accum += wrapWithSpan(node).outerHTML, '')
+        } else {
+            const el = document.createElement(parent.tagName.toLowerCase());
+
+            nodes.forEach(node => {
+                el.append(wrapWithSpan(node))
+            });
+
+            content += el.outerHTML;
+        }
+    })
+
+    return content;
+}
+
 export const initEditor = editor => {
     const styles = getComputedStyle(editor);
 
@@ -96,7 +171,7 @@ export const initEditor = editor => {
     DEFAULT_FONT_WEIGHT = parseInt(styles.getPropertyValue(DEFAULT_FONT_WEIGHT_VAR), 10);
     BOLD_FONT_WEIGHT = parseInt(styles.getPropertyValue(BOLD_FONT_WEIGHT_VAR), 10);
 
-    document.execCommand('defaultParagraphSeparator', false, 'div');
+    document.execCommand('defaultParagraphSeparator', false, 'p');
 }
 
 export const handeCopyCommand = event => {
@@ -111,50 +186,51 @@ export const handeCopyCommand = event => {
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
     // selection is left->right up->down OR right->left down->up
     const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
-    // getting text styles for every text node in selection
-    const selectedNodesWithStyles = selectedTextNodes.map(node => {
-        const parents = getTextNodeParents(node);
+    const selectedTextNodesParents = getTextNodesTopParentsMap(selectedTextNodes);
+    const selectedNodesWithStyles = getSelectedNodesWithStyles(selectedTextNodes);
+    const content = getStyledNodesContent(selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder);
 
-        // closest to text node
-        let textStyleNode = parents[0];
-        // furthest from text node
-        let displayStyleNode = parents[parents.length - 1];
+    event.clipboardData.clearData();
+    event.clipboardData.setData('text/html', content);
+}
 
-        if (!parents.length) {
-            textStyleNode = EDITOR;
+export const handeCutCommand = event => {
+    if (!canExecCommand()) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const selection = document.getSelection();
+    const allTextNodes = collectAllTextNodes(EDITOR);
+    const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
+    // selection is left->right up->down OR right->left down->up
+    const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
+    const selectedTextNodesParents = getTextNodesTopParentsMap(selectedTextNodes);
+    const selectedNodesWithStyles = getSelectedNodesWithStyles(selectedTextNodes);
+    const content = getStyledNodesContent(selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder);
+
+    // removing cut out nodes
+    selectedTextNodesParents.forEach((nodes, parent) => {
+        let removed = 0;
+
+        nodes.forEach(node => {
+            const selectedText = getSelectedNodeText(node, selection, selectionOrder);
+
+            if (node.textContent === selectedText) {
+                node.remove();
+                removed++;
+
+                return;
+            }
+
+            node.textContent = node.textContent.replace(selectedText, '');
+        });
+
+        if (parent !== EDITOR && removed === nodes.length) {
+            parent.remove();
         }
-
-        const textStyles = getComputedStyle(textStyleNode);
-        const displayStyles = displayStyleNode ? getComputedStyle(displayStyleNode) : undefined;
-        const styles = `` +
-            `font-size: ${textStyles.getPropertyValue('font-size')}; ` +
-            `font-family: ${textStyles.getPropertyValue('font-family').replace(/\"/g, `'`)}; ` +
-            `font-weight: ${textStyles.getPropertyValue('font-weight')}; ` +
-            `font-style: ${textStyles.getPropertyValue('font-style')}; ` +
-            `font-variant: ${textStyles.getPropertyValue('font-variant')}; ` +
-            `line-height: ${textStyles.getPropertyValue('line-height')}; ` +
-            `text-decoration: ${textStyles.getPropertyValue('text-decoration')}; ` +
-            `vertical-align: ${textStyles.getPropertyValue('vertical-align')}; ` +
-            `white-space: ${textStyles.getPropertyValue('white-space')}; ` +
-            `color: ${textStyles.getPropertyValue('color')}; ` +
-            `background-color: ${textStyles.getPropertyValue('background-color')}; ` +
-            `margin: ${textStyles.getPropertyValue('margin')}; ` +
-            `display: ${displayStyles ? displayStyles.getPropertyValue('display') : 'inline'};`;
-
-        return {
-            node,
-            styles,
-        };
     });
-    // wrapping every text node in span with corresponding styles
-    const content = selectedNodesWithStyles.reduce((accum, {node, styles}) => {
-        const span = document.createElement('span')
-
-        span.textContent = getSelectedNodeText(node, selection, selectionOrder);
-        span.setAttribute('style', styles);
-
-        return accum += span.outerHTML;
-    }, '');
 
     event.clipboardData.clearData();
     event.clipboardData.setData('text/html', content);
@@ -191,6 +267,7 @@ export const handleBoldCommand = () => {
         }
 
         const obs = new MutationObserver(() => {
+            // see case #1 in https://github.com/glebmlk/wysiwig-task/issues/1
             editor.querySelectorAll('span[style*="font-weight: normal;"]').forEach(el => {
                 const fontWeight = getComputedStyle(el.parentElement)['font-weight'];
 

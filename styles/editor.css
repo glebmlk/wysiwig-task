@@ -21,6 +21,12 @@
     margin: 4px 0;
 }
 
+.editor .edit-area h1,
+.editor .edit-area h2 {
+    margin: 0;
+}
+
+
 .editor .edit-area:empty::before {
   content: attr(placeholder);
   font-size: 1.5rem;
@@ -40,7 +46,10 @@
 }
 
 /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
-.editor .edit-area font[size="7"], .editor .edit-area span[style*="font-size: xxx-large;"], .editor .edit-area span[style*="font-size: -webkit-xxx-large;"] {
+.editor .edit-area font[size="7"],
+.editor .edit-area h1,
+.editor .edit-area span[style*="font-size: xxx-large;"],
+.editor .edit-area span[style*="font-size: -webkit-xxx-large;"] {
   font-size: 1.5rem !important;
   line-height: 2.5rem;
   font-weight: 500;
@@ -48,7 +57,10 @@
 }
 
 /* see case #2 in https://github.com/glebmlk/wysiwig-task/issues/1 */
-.editor .edit-area font[size="6"], .editor .edit-area span[style*="font-size: xx-large;"], .editor .edit-area span[style*="font-size: -webkit-xx-large;"] {
+.editor .edit-area font[size="6"],
+.editor .edit-area h2,
+.editor .edit-area span[style*="font-size: xx-large;"],
+.editor .edit-area span[style*="font-size: -webkit-xx-large;"] {
   font-size: 1.2rem !important;
   line-height: 2.5rem;
   font-weight: 500;
