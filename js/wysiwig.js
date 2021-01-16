@@ -50,7 +50,7 @@ const getTextNodeParents = node => {
     let parent = node.parentElement;
 
     while (parent !== EDITOR) {
-        parents.push(parent)
+        parents.push(parent);
 
         parent = parent.parentElement;
     }
@@ -59,7 +59,7 @@ const getTextNodeParents = node => {
 }
 
 // getting map of paragraphs and their text nodes
-const getTextNodesTopParentsMap = selectedTextNodes => {
+const getParagraphsWithTextNodes = selectedTextNodes => {
     const parentsMap = new Map();
 
     selectedTextNodes.forEach(node => {
@@ -77,31 +77,20 @@ const getTextNodesTopParentsMap = selectedTextNodes => {
     return parentsMap;
 };
 
-// getting text styles for every text node in selection
-const getSelectedNodesWithStyles = selectedTextNodes => {
-    return selectedTextNodes.map(node => {
-        const parents = getTextNodeParents(node);
-        const textStyleNode = !!parents.length ? parents[0] : EDITOR;
-        const textStyles = getComputedStyle(textStyleNode);
-        const styles = `` +
-            `font-size: ${textStyles.getPropertyValue('font-size')}; ` +
-            `font-family: ${textStyles.getPropertyValue('font-family').replace(/\"/g, `'`)}; ` +
-            `font-weight: ${textStyles.getPropertyValue('font-weight')}; ` +
-            `font-style: ${textStyles.getPropertyValue('font-style')}; ` +
-            `font-variant: ${textStyles.getPropertyValue('font-variant')}; ` +
-            `line-height: ${textStyles.getPropertyValue('line-height')}; ` +
-            `text-decoration: ${textStyles.getPropertyValue('text-decoration')}; ` +
-            `vertical-align: ${textStyles.getPropertyValue('vertical-align')}; ` +
-            `white-space: ${textStyles.getPropertyValue('white-space')}; ` +
-            `color: ${textStyles.getPropertyValue('color')}; ` +
-            `background-color: ${textStyles.getPropertyValue('background-color')};`;
+const getNodesTree = () => {
+    const walk = (root) => {
+        const tree = {};
 
-        return {
-            node,
-            styles,
-        };
-    });
-}
+        tree.root = root;
+        tree.children = Array.from(root.childNodes).map(node => walk(node));
+
+        return tree;
+    }
+
+    const nodesTree = walk(EDITOR);
+
+    return nodesTree;
+};
 
 // getting selected part of text in node
 const getSelectedNodeText = (node, selection, selectionOrder) => {
@@ -134,34 +123,40 @@ const getSelectedNodeText = (node, selection, selectionOrder) => {
     }
 }
 
-const getStyledNodesContent = (selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder) => {
-    // wrapping every text node in span with corresponding styles
-    const wrapWithSpan = node => {
-        const span = document.createElement('span')
-        const styles = selectedNodesWithStyles.find(({node: selectedNode}) => selectedNode === node);
+const getClipboardContent = (nodesTree, selection, selectionOrder) => {
+    const walk = children => {
+        return children.map(child => {
+            const isTextNode = child.root.nodeType === child.root.TEXT_NODE;
+            const el = isTextNode ? document.createElement('span') : child.root.cloneNode();
 
-        span.textContent = getSelectedNodeText(node, selection, selectionOrder);
-        span.setAttribute('style', styles.styles);
+            if (isTextNode) {
+                const st = getComputedStyle(isTextNode ? child.root.parentElement : child.root);
+                const styles = `` +
+                    `font-family: ${st.getPropertyValue('font-family')}; ` +
+                    `font-size: ${st.getPropertyValue('font-size')}; ` +
+                    `font-weight: ${st.getPropertyValue('font-weight')}; ` +
+                    `font-style: ${st.getPropertyValue('font-style')}; ` +
+                    `font-variant: ${st.getPropertyValue('font-variant')}; ` +
+                    `line-height: ${st.getPropertyValue('line-height')}; ` +
+                    `text-decoration: ${st.getPropertyValue('text-decoration')}; ` +
+                    `vertical-align: ${st.getPropertyValue('vertical-align')}; ` +
+                    `white-space: ${st.getPropertyValue('white-space')}; ` +
+                    `color: ${st.getPropertyValue('color')}; ` +
+                    `background-color: ${st.getPropertyValue('background-color')};`;
 
-        return span;
+                el.setAttribute('style', styles);
+                el.textContent = getSelectedNodeText(child.root, selection, selectionOrder);
+            } else {
+                walk(child.children).forEach(n => el.append(n));
+            }
+
+            return el;
+        });
     }
-    let content = '';
 
-    selectedTextNodesParents.forEach((nodes, parent) => {
-        if (parent === EDITOR) {
-            content += nodes.reduce((accum, node) => accum += wrapWithSpan(node).outerHTML, '')
-        } else {
-            const el = document.createElement(parent.tagName.toLowerCase());
+    const contents = walk(nodesTree.children);
 
-            nodes.forEach(node => {
-                el.append(wrapWithSpan(node))
-            });
-
-            content += el.outerHTML;
-        }
-    })
-
-    return content;
+    return contents.reduce((accum, el) => accum += el.outerHTML, '');
 }
 
 export const initEditor = editor => {
@@ -183,12 +178,10 @@ export const handeCopyCommand = event => {
 
     const selection = window.getSelection();
     const allTextNodes = collectAllTextNodes(EDITOR);
-    const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
     // selection is left->right up->down OR right->left down->up
-    const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
-    const selectedTextNodesParents = getTextNodesTopParentsMap(selectedTextNodes);
-    const selectedNodesWithStyles = getSelectedNodesWithStyles(selectedTextNodes);
-    const content = getStyledNodesContent(selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder);
+    const selectionOrder = allTextNodes.indexOf(selection.anchorNode) > allTextNodes.indexOf(selection.focusNode) ? -1 : 1;
+    const nodesTree = getNodesTree();
+    const content = getClipboardContent(nodesTree, selection, selectionOrder)
 
     event.clipboardData.clearData();
     event.clipboardData.setData('text/html', content);
@@ -206,9 +199,9 @@ export const handeCutCommand = event => {
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
     // selection is left->right up->down OR right->left down->up
     const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
-    const selectedTextNodesParents = getTextNodesTopParentsMap(selectedTextNodes);
-    const selectedNodesWithStyles = getSelectedNodesWithStyles(selectedTextNodes);
-    const content = getStyledNodesContent(selectedTextNodesParents, selectedNodesWithStyles, selection, selectionOrder);
+    const selectedTextNodesParents = getParagraphsWithTextNodes(selectedTextNodes);
+    const nodesTree = getNodesTree();
+    const content = getClipboardContent(nodesTree, selection, selectionOrder)
 
     // removing cut out nodes
     selectedTextNodesParents.forEach((nodes, parent) => {
