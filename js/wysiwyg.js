@@ -22,6 +22,11 @@ const canExecCommand = () => {
     return true;
 }
 
+// selection is left->right up->down OR right->left down->up
+const getSelectionOrder = (selection, nodes) => {
+    return nodes.indexOf(selection.anchorNode) > nodes.indexOf(selection.focusNode) ? -1 : 1;
+}
+
 // getting all text nodes inside editor
 const collectAllTextNodes = startNode => {
     if (!startNode) {
@@ -78,16 +83,17 @@ const getParagraphsWithTextNodes = selectedTextNodes => {
 };
 
 const getNodesTree = () => {
-    const walk = (root) => {
+    const walk = (root, parent) => {
         const tree = {};
 
         tree.root = root;
-        tree.children = Array.from(root.childNodes).map(node => walk(node));
+        tree.parent = parent;
+        tree.children = Array.from(root.childNodes).map(node => walk(node, parent));
 
         return tree;
     }
 
-    const nodesTree = walk(EDITOR);
+    const nodesTree = walk(EDITOR, null);
 
     return nodesTree;
 };
@@ -125,29 +131,38 @@ const getSelectedNodeText = (node, selection, selectionOrder) => {
 
 const getClipboardContent = (nodesTree, selection, selectionOrder) => {
     const walk = children => {
-        return children.map(child => {
-            const isTextNode = child.root.nodeType === child.root.TEXT_NODE;
-            const el = isTextNode ? document.createElement('span') : child.root.cloneNode();
+        return children.map(({root, children}) => {
+            const isTextNode = root.nodeType === root.TEXT_NODE;
+            const isFontNode = root.tagName === 'FONT';
+            const el = isTextNode ? document.createElement('span') : root.cloneNode();
 
             if (isTextNode) {
-                const st = getComputedStyle(isTextNode ? child.root.parentElement : child.root);
+                const stylesMap = getComputedStyle(root.parentElement);
                 const styles = `` +
-                    `font-family: ${st.getPropertyValue('font-family')}; ` +
-                    `font-size: ${st.getPropertyValue('font-size')}; ` +
-                    `font-weight: ${st.getPropertyValue('font-weight')}; ` +
-                    `font-style: ${st.getPropertyValue('font-style')}; ` +
-                    `font-variant: ${st.getPropertyValue('font-variant')}; ` +
-                    `line-height: ${st.getPropertyValue('line-height')}; ` +
-                    `text-decoration: ${st.getPropertyValue('text-decoration')}; ` +
-                    `vertical-align: ${st.getPropertyValue('vertical-align')}; ` +
-                    `white-space: ${st.getPropertyValue('white-space')}; ` +
-                    `color: ${st.getPropertyValue('color')}; ` +
-                    `background-color: ${st.getPropertyValue('background-color')};`;
+                    `font-family: ${stylesMap.getPropertyValue('font-family')}; ` +
+                    `font-size: ${stylesMap.getPropertyValue('font-size')}; ` +
+                    `font-weight: ${stylesMap.getPropertyValue('font-weight')}; ` +
+                    `font-style: ${stylesMap.getPropertyValue('font-style')}; ` +
+                    `font-variant: ${stylesMap.getPropertyValue('font-variant')}; ` +
+                    `line-height: ${stylesMap.getPropertyValue('line-height')}; ` +
+                    `text-decoration: ${stylesMap.getPropertyValue('text-decoration')}; ` +
+                    `vertical-align: ${stylesMap.getPropertyValue('vertical-align')}; ` +
+                    `white-space: ${stylesMap.getPropertyValue('white-space')}; ` +
+                    `color: ${stylesMap.getPropertyValue('color')}; ` +
+                    `background-color: ${stylesMap.getPropertyValue('background-color')};`;
 
                 el.setAttribute('style', styles);
-                el.textContent = getSelectedNodeText(child.root, selection, selectionOrder);
+                el.textContent = getSelectedNodeText(root, selection, selectionOrder);
             } else {
-                walk(child.children).forEach(n => el.append(n));
+                walk(children).forEach(n => el.appendChild(n));
+            }
+
+            if (isFontNode) {
+                const p = document.createElement('p');
+
+                p.appendChild(el);
+
+                return p;
             }
 
             return el;
@@ -178,8 +193,7 @@ export const handeCopyCommand = event => {
 
     const selection = window.getSelection();
     const allTextNodes = collectAllTextNodes(EDITOR);
-    // selection is left->right up->down OR right->left down->up
-    const selectionOrder = allTextNodes.indexOf(selection.anchorNode) > allTextNodes.indexOf(selection.focusNode) ? -1 : 1;
+    const selectionOrder = getSelectionOrder(selection, allTextNodes);
     const nodesTree = getNodesTree();
     const content = getClipboardContent(nodesTree, selection, selectionOrder)
 
@@ -197,8 +211,7 @@ export const handeCutCommand = event => {
     const selection = document.getSelection();
     const allTextNodes = collectAllTextNodes(EDITOR);
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
-    // selection is left->right up->down OR right->left down->up
-    const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
+    const selectionOrder = getSelectionOrder(selection, selectedTextNodes);
     const selectedTextNodesParents = getParagraphsWithTextNodes(selectedTextNodes);
     const nodesTree = getNodesTree();
     const content = getClipboardContent(nodesTree, selection, selectionOrder)
@@ -290,6 +303,7 @@ export const handleHeaderCommand = size => {
     const selection = document.getSelection();
     const allTextNodes = collectAllTextNodes(EDITOR);
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
+    const selectionOrder = getSelectionOrder(selection, selectedTextNodes);
     // searching nodes with font size = size to apply
     const sameSizeNodes = selectedTextNodes.map(node => {
         let parent = node.parentElement;
@@ -315,8 +329,6 @@ export const handleHeaderCommand = size => {
             return;
         }
 
-        // selection is up-down or down-up
-        const selectionOrder = selectedTextNodes.indexOf(selection.anchorNode) > selectedTextNodes.indexOf(selection.focusNode) ? -1 : 1;
         const range = document.createRange();
 
         if (selectionOrder === 1) {

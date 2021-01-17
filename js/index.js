@@ -1,5 +1,5 @@
 import {iniXSSProtection} from './xss-protection.js';
-import {handleHeaderCommand, handleBoldCommand, handleItalicCommand, HEADERS, initEditor, handeCopyCommand, handeCutCommand} from './wysiwig.js';
+import {handleHeaderCommand, handleBoldCommand, handleItalicCommand, HEADERS, initEditor, handeCopyCommand, handeCutCommand} from './wysiwyg.js';
 
 const EDITOR = '#editor';
 const H1_BUTTON = '#h1';
