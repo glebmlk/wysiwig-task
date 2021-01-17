@@ -63,25 +63,6 @@ const getTextNodeParents = node => {
     return parents;
 }
 
-// getting map of paragraphs and their text nodes
-const getParagraphsWithTextNodes = selectedTextNodes => {
-    const parentsMap = new Map();
-
-    selectedTextNodes.forEach(node => {
-        const parents = getTextNodeParents(node);
-
-        const parent = !!parents.length ? parents[parents.length - 1] : EDITOR;
-
-        if (parentsMap.has(parent)) {
-            parentsMap.set(parent, [...parentsMap.get(parent), node]);
-        } else {
-            parentsMap.set(parent, [node]);
-        }
-    });
-
-    return parentsMap;
-};
-
 const getNodesTree = () => {
     const walk = (root, parent) => {
         const tree = {};
@@ -212,31 +193,10 @@ export const handeCutCommand = event => {
     const allTextNodes = collectAllTextNodes(EDITOR);
     const selectedTextNodes = allTextNodes.filter(node => selection.containsNode(node));
     const selectionOrder = getSelectionOrder(selection, selectedTextNodes);
-    const selectedTextNodesParents = getParagraphsWithTextNodes(selectedTextNodes);
     const nodesTree = getNodesTree();
     const content = getClipboardContent(nodesTree, selection, selectionOrder)
 
-    // removing cut out nodes
-    selectedTextNodesParents.forEach((nodes, parent) => {
-        let removed = 0;
-
-        nodes.forEach(node => {
-            const selectedText = getSelectedNodeText(node, selection, selectionOrder);
-
-            if (node.textContent === selectedText) {
-                node.remove();
-                removed++;
-
-                return;
-            }
-
-            node.textContent = node.textContent.replace(selectedText, '');
-        });
-
-        if (parent !== EDITOR && removed === nodes.length) {
-            parent.remove();
-        }
-    });
+    selection.getRangeAt(0).extractContents();
 
     event.clipboardData.clearData();
     event.clipboardData.setData('text/html', content);
